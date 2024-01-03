@@ -56,6 +56,8 @@ func OpenPoller() (poller *Poller, err error) {
 		return
 	}
 	poller.efdBuf = make([]byte, 8)
+	// 将 efd 添加到读取事件中
+	// eventfd 适用于在线程或进程之间进行异步事件通知，例如在多线程或多进程环境下进行事件通知和同步。
 	if err = poller.AddRead(&PollAttachment{FD: poller.efd}); err != nil {
 		_ = poller.Close()
 		poller = nil
@@ -134,6 +136,8 @@ func (p *Poller) Polling(callback func(fd int, ev uint32) error) error {
 
 		for i := 0; i < n; i++ {
 			ev := &el.events[i]
+			// fd == p.efd 说明有连接到来，需要将连接加入到epoll池中 (具体代码查看mainReactor逻辑)
+			// 否则读取连接数据
 			if fd := int(ev.Fd); fd != p.efd {
 				switch err = callback(fd, ev.Events); err {
 				case nil:

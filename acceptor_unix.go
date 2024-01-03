@@ -53,8 +53,11 @@ func (eng *engine) accept(fd int, _ netpoll.IOEvent) error {
 		logging.Error(err)
 	}
 
+	// eventLoops 是subReactor列表
 	el := eng.eventLoops.next(remoteAddr)
 	c := newTCPConn(nfd, el, sa, el.ln.addr, remoteAddr)
+	// 新连接注册到epoll池中 并且给epoll池中的eventfd写入1(通知eventfd有新连接加入)
+	// register函数给新连接fd添加读写事件，并且将fd添加到epoll池的connections中进行管理
 	err = el.poller.UrgentTrigger(el.register, c)
 	if err != nil {
 		eng.opts.Logger.Errorf("UrgentTrigger() failed due to error: %v", err)

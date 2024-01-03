@@ -140,6 +140,7 @@ func (eng *engine) activateEventLoops(numEventLoop int) (err error) {
 }
 
 func (eng *engine) activateReactors(numEventLoop int) error {
+	// subReactor
 	for i := 0; i < numEventLoop; i++ {
 		if p, err := netpoll.OpenPoller(); err == nil {
 			el := new(eventloop)
@@ -155,9 +156,11 @@ func (eng *engine) activateReactors(numEventLoop int) error {
 		}
 	}
 
+	// 启动subReactor
 	// Start sub reactors in background.
 	eng.startSubReactors()
 
+	// 	mainReactor
 	if p, err := netpoll.OpenPoller(); err == nil {
 		el := new(eventloop)
 		el.ln = eng.ln
@@ -165,11 +168,13 @@ func (eng *engine) activateReactors(numEventLoop int) error {
 		el.engine = eng
 		el.poller = p
 		el.eventHandler = eng.eventHandler
+		// 将 listener.fd 添加到mainReactor读取事件中,并且将accept做为回调函数
 		if err = el.poller.AddRead(eng.ln.packPollAttachment(eng.accept)); err != nil {
 			return err
 		}
 		eng.acceptor = el
 
+		// 启动mainReactor
 		// Start main reactor in background.
 		eng.workerPool.Go(el.activateMainReactor)
 	} else {

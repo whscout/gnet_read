@@ -63,6 +63,7 @@ func (el *eventloop) closeConns() {
 
 func (el *eventloop) register(itf interface{}) error {
 	c := itf.(*conn)
+	// 添加读事件
 	if err := el.poller.AddRead(&c.pollAttachment); err != nil {
 		_ = unix.Close(c.fd)
 		c.release()
@@ -74,6 +75,7 @@ func (el *eventloop) register(itf interface{}) error {
 	if c.isDatagram {
 		return nil
 	}
+	// open中会添加写事件
 	return el.open(c)
 }
 
@@ -88,6 +90,7 @@ func (el *eventloop) open(c *conn) error {
 	}
 
 	if !c.outboundBuffer.IsEmpty() {
+		// 添加写事件
 		if err := el.poller.AddWrite(&c.pollAttachment); err != nil {
 			return err
 		}
